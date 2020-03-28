@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package contracts;
+
+service URLQueue {
+    rpc Dequeue(Empty) returns (ScraperJob) {}
+    rpc Enqueue(ScraperJob) returns (Empty) {}
+}
+
+message ScraperJob {
+    string url = 1;
+}
+
+message Empty {
+
+}

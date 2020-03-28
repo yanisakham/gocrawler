@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/wangwalton/gocrawler/html"
 	"github.com/wangwalton/gocrawler/queue"
+	"github.com/wangwalton/gocrawler/scraper/html"
 )
 
 func Get(url string) (string, error) {
