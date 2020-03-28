@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/wangwalton/gocrawler/contracts"
+	"github.com/wangwalton/gocrawler/scraper/crawler"
 	"github.com/wangwalton/gocrawler/scraper/queue"
 	"google.golang.org/grpc"
 )
@@ -31,9 +32,11 @@ func main() {
 	client := contracts.NewURLQueueClient(conn)
 	queue.Enqueue(client, &contracts.ScraperJob{Url: scrape_url})
 
-	job := queue.Dequeue(client)
-	fmt.Printf("Popped job of %s\n", job.Url)
-
+	for {
+		job := queue.Dequeue(client)
+		go crawler.ProcessURL(client, job.Url)
+		// fmt.Printf("Popped job of %s\n", job.Url)
+	}
 	// queue.Enqueue(scrape_url)
 	// for {
 	// 	u := queue.Dequeue()

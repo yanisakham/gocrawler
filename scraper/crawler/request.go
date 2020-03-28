@@ -6,8 +6,9 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/wangwalton/gocrawler/queue"
+	"github.com/wangwalton/gocrawler/contracts"
 	"github.com/wangwalton/gocrawler/scraper/html"
+	"github.com/wangwalton/gocrawler/scraper/queue"
 )
 
 func Get(url string) (string, error) {
@@ -20,12 +21,13 @@ func Get(url string) (string, error) {
 	return string(body), err
 }
 
-func ProcessURL(q queue.Queue, scrape_url string) {
+func ProcessURL(client contracts.URLQueueClient, scrape_url string) {
 	body, _ := Get(scrape_url)
 	url_object, _ := url.Parse(scrape_url)
 	links := html.Extractor(body, url_object)
 	fmt.Printf("Processed %s found %d links\n", scrape_url, len(links))
 	for l := range links {
-		q.Enqueue(l)
+		sj := contracts.ScraperJob{Url: l}
+		queue.Enqueue(client, &sj)
 	}
 }
