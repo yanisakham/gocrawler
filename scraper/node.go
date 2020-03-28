@@ -2,12 +2,12 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"os"
 
 	"github.com/wangwalton/gocrawler/contracts"
-	"github.com/wangwalton/gocrawler/scraper/crawler"
-	"github.com/wangwalton/gocrawler/scraper/queue"
+	"github.com/wangwalton/gocrawler/scraper/scraper"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
 )
 
@@ -18,11 +18,27 @@ var (
 	// serverHostOverride = flag.String("server_host_override", "x.test.youtube.com", "The server name use to verify the hostname returned by TLS handshake")
 )
 
+var logger, err = zap.NewDevelopment()
+
+func initZapLog() *zap.Logger {
+	config := zap.NewDevelopmentConfig()
+	config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+	config.EncoderConfig.TimeKey = "timestamp"
+	config.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+	logger, _ := config.Build()
+	return logger
+}
+
 func main() {
+	loggerMgr := initZapLog()
+	zap.ReplaceGlobals(loggerMgr)
+	defer loggerMgr.Sync() // flushes buffer, if any
+	logger := loggerMgr.Sugar()
+
 	flag.Parse()
 	conn, err := grpc.Dial(*serverAddr, grpc.WithInsecure())
 	if err != nil {
-		fmt.Printf("faile to dial: %v", err)
+		logger.Info("failed to dial: %v", err)
 		os.Exit(1)
 	}
 	defer conn.Close()
@@ -30,16 +46,11 @@ func main() {
 	// Seeding with Jobs
 	scrape_url := "https://cnn.com"
 	client := contracts.NewURLQueueClient(conn)
-	queue.Enqueue(client, &contracts.ScraperJob{Url: scrape_url})
+	scraper.Enqueue(client, &contracts.ScraperJob{Url: scrape_url, Requeue: false})
 
 	for {
-		job := queue.Dequeue(client)
-		go crawler.ProcessURL(client, job.Url)
-		// fmt.Printf("Popped job of %s\n", job.Url)
+		job := scraper.Dequeue(client)
+		scraper.ProcessURL(client, job.Url)
+		logger.Debugf("Popped job of %s\n", job.Url)
 	}
-	// queue.Enqueue(scrape_url)
-	// for {
-	// 	u := queue.Dequeue()
-	// 	go crawler.ProcessURL(queue, u)
-	// }
 }

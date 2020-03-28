@@ -1,4 +1,4 @@
-package html
+package scraper
 
 import (
 	"log"
@@ -8,7 +8,7 @@ import (
 	"golang.org/x/net/html"
 )
 
-func Extractor(h string, u *url.URL) map[string]bool {
+func ExtractorHTML(h string, u *url.URL) map[string]bool {
 	doc, err := html.Parse(strings.NewReader(h))
 	if err != nil {
 		log.Fatal(err)

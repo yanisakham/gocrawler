@@ -1,33 +1,33 @@
-package crawler
+package scraper
 
 import (
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 
 	"github.com/wangwalton/gocrawler/contracts"
-	"github.com/wangwalton/gocrawler/scraper/html"
-	"github.com/wangwalton/gocrawler/scraper/queue"
+	"go.uber.org/zap"
 )
 
-func Get(url string) (string, error) {
+func Get(url string) ([]byte, error) {
 	resp, err := http.Get(url)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
-	return string(body), err
+	return body, err
 }
 
 func ProcessURL(client contracts.URLQueueClient, scrape_url string) {
 	body, _ := Get(scrape_url)
 	url_object, _ := url.Parse(scrape_url)
-	links := html.Extractor(body, url_object)
-	fmt.Printf("Processed %s found %d links\n", scrape_url, len(links))
+	links := ExtractorHTML(string(body), url_object)
+	zap.S().Debugf("Processed %s found %d links", scrape_url, len(links))
+
+	WriteFile(body, url_object)
 	for l := range links {
 		sj := contracts.ScraperJob{Url: l}
-		queue.Enqueue(client, &sj)
+		go Enqueue(client, &sj)
 	}
 }
