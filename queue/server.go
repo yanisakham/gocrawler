@@ -12,6 +12,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 type urlScraperServer struct {
@@ -22,9 +23,14 @@ type urlScraperServer struct {
 }
 
 var (
-	// tls        = flag.Bool("tls", false, "Connection uses TLS if true, else plain TCP")
-	// certFile   = flag.String("cert_file", "", "The TLS cert file")
-	// keyFile    = flag.String("key_file", "", "The TLS key file")
+	crt = "ssl/server.crt"
+	key = "ssl/server.key"
+)
+
+var (
+	tls      = flag.Bool("tls", false, "Connection uses TLS if true, else plain TCP")
+	certFile = flag.String("cert_file", "ssl/server.crt", "The TLS cert file")
+	keyFile  = flag.String("key_file", "ssl/server.key", "The TLS key file")
 	// jsonDBFile = flag.String("json_db_file", "", "A json file containing a list of features")
 	port = flag.Int("port", 10000, "The server port")
 )
@@ -52,12 +58,11 @@ func (s *urlScraperServer) isVisited(job *contracts.ScraperJob) bool {
 
 func (s *urlScraperServer) Dequeue(ctx context.Context, req *contracts.Empty) (*contracts.ScraperJob, error) {
 	job := <-s.urlQueue
-	zap.S().Debugf("Receved dequeue request, sending %s\n", job.Url)
+	zap.S().Debugf("Receved dequeue request, sending %s", job.Url)
 	return &job, nil
 }
 
 func (s *urlScraperServer) Enqueue(ctx context.Context, req *contracts.ScraperJob) (*contracts.Empty, error) {
-
 	if req.Requeue || !s.isVisited(req) {
 		// fmt.Printf("Enqueuing %s\n", req.Url)
 		s.urlQueue <- *req
@@ -87,7 +92,16 @@ func main() {
 		logger.Infof("failed to listen: %v", err)
 		os.Exit(1)
 	}
-	grpcServer := grpc.NewServer()
+	var opts []grpc.ServerOption
+	if *tls {
+		creds, err := credentials.NewServerTLSFromFile(*certFile, *keyFile)
+		if err != nil {
+			logger.Infof("Failed to generate credentials %v", err)
+			os.Exit(1)
+		}
+		opts = []grpc.ServerOption{grpc.Creds(creds)}
+	}
+	grpcServer := grpc.NewServer(opts...)
 	contracts.RegisterURLQueueServer(grpcServer, newServer())
 	grpcServer.Serve(lis)
 }

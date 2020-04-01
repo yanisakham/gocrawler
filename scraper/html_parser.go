@@ -8,7 +8,7 @@ import (
 	"golang.org/x/net/html"
 )
 
-func ExtractorHTML(h string, u *url.URL) map[string]bool {
+func ExtractorHTML(h string, u url.URL) map[string]bool {
 	doc, err := html.Parse(strings.NewReader(h))
 	if err != nil {
 		log.Fatal(err)
@@ -21,7 +21,7 @@ func ExtractorHTML(h string, u *url.URL) map[string]bool {
 
 const https = "https:"
 
-func extractorHelper(n *html.Node, u *url.URL, links map[string]bool) {
+func extractorHelper(n *html.Node, u url.URL, links map[string]bool) {
 	if n.Type == html.ElementNode && n.Data == "a" {
 		for _, a := range n.Attr {
 			if a.Key == "href" {

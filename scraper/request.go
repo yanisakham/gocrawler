@@ -22,10 +22,10 @@ func Get(url string) ([]byte, error) {
 func ProcessURL(client contracts.URLQueueClient, scrape_url string) {
 	body, _ := Get(scrape_url)
 	url_object, _ := url.Parse(scrape_url)
-	links := ExtractorHTML(string(body), url_object)
+	links := ExtractorHTML(string(body), *url_object)
 	zap.S().Debugf("Processed %s found %d links", scrape_url, len(links))
 
-	WriteFile(body, url_object)
+	go WriteFile(body, url_object)
 	for l := range links {
 		sj := contracts.ScraperJob{Url: l}
 		go Enqueue(client, &sj)
