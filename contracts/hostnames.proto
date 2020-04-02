@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package contracts;
+
+service HostnameCoordinator {
+    rpc getHostname(Empty) returns (HostnamePaths) {}
+    rpc addHostnames(MultipleHostnamePaths) returns (Empty) {}
+}
+
+message HostnamePaths {
+    string hostname = 1; // eg: "google.com"
+    uint32 numReqsPerMinuteAllowed = 2;
+    map<string, Empty> paths = 3; // eg: "/maps" "/drive"
+}
+
+message MultipleHostnamePaths {
+    repeated HostnamePaths urls = 1;
+}
+
+message Empty {}

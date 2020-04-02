@@ -15,12 +15,12 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
-type urlScraperServer struct {
-	contracts.UnimplementedURLQueueServer
-	urlQueue chan contracts.ScraperJob
-	visited  map[string]bool
-	mu       sync.Mutex // Protects visited
+type hostnameCoordinatorServer struct {
+	contracts.UnimplementedHostnameCoordinatorServer
+	hostnameQueue []*contracts.HostnamePaths
+	mu sync.Mutex
 }
+
 
 var (
 	crt = "ssl/server.crt"
@@ -44,39 +44,18 @@ func initZapLog() *zap.Logger {
 	return logger
 }
 
-func (s *urlScraperServer) isVisited(job *contracts.ScraperJob) bool {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.visited[job.Url] {
-		return true
-	} else {
-		s.visited[job.Url] = true
-		return false
-	}
+func (s *hostnameCoordinatorServer) GetHostname(ctx context.Context, req *contracts.Empty) (*contracts.HostnamePaths, error) {
+	return nil, nil
 }
 
-func (s *urlScraperServer) Dequeue(ctx context.Context, req *contracts.Empty) (*contracts.ScraperJob, error) {
-	job := <-s.urlQueue
-	zap.S().Debugf("Receved dequeue request, sending %s", job.Url)
-	return &job, nil
+func (s *hostnameCoordinatorServer) AddHostnames(ctx context.Context,
+	req *contracts.MultipleHostnamePaths) (*contracts.Empty, error) {
+	return nil, nil
 }
 
-func (s *urlScraperServer) Enqueue(ctx context.Context, req *contracts.ScraperJob) (*contracts.Empty, error) {
-	if req.Requeue || !s.isVisited(req) {
-		// fmt.Printf("Enqueuing %s\n", req.Url)
-		s.urlQueue <- *req
-	} else {
-		// fmt.Printf("Rejected %s\n", req.Url)
-	}
-	return &contracts.Empty{}, nil
-
-}
-
-func newServer() *urlScraperServer {
-	return &urlScraperServer{
-		urlQueue: make(chan contracts.ScraperJob, 1000000),
-		visited:  make(map[string]bool),
+func newServer() *hostnameCoordinatorServer {
+	return &hostnameCoordinatorServer{
+		hostnameQueue: make([]*contracts.HostnamePaths, 0),
 	}
 }
 
@@ -102,6 +81,6 @@ func main() {
 		opts = []grpc.ServerOption{grpc.Creds(creds)}
 	}
 	grpcServer := grpc.NewServer(opts...)
-	contracts.RegisterURLQueueServer(grpcServer, newServer())
+	contracts.RegisterHostnameCoordinatorServer(grpcServer, newServer())
 	grpcServer.Serve(lis)
 }

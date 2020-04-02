@@ -1,24 +1,13 @@
 package scraper
 
+import "time"
+
 type MasterQueue struct {
 	HostnameQueueMap   map[string]*HostnameQueue
 	HostnameQueueQueue []*HostnameQueue
 	CurrentQueue       *HostnameQueue
 }
 
-func (mq *MasterQueue) nextURL() (string, bool) {
-	return "", false
-}
-
-/*
-	I debated for a long time on whether paths should be a slice or a map,
-	in the end, went, I went with a map, because since this source of data comes from
-	the HostnameCoordinatorServer, which directly will use a map regardless to avoid duplicate
-	urls, and since we can only have one hostname coordinator, it is best to lighten the load
-	as much as possible.
-*/
-func (mq *MasterQueue) addNewHostname(hostname string, paths map[string]null ) {
-}
 /*
 	API for using slice as a queue
 
@@ -34,3 +23,32 @@ func (mq *MasterQueue) addNewHostname(hostname string, paths map[string]null ) {
 	fmt.Println("Queue is empty !")
 	}
 */
+
+
+func (mq *MasterQueue) nextURL() (string, bool) {
+	// TODO
+	return "", false
+}
+
+// Takes in a HostnameQueue that's already preprocessed and ready to
+// replace mq.CurrentQueue
+func (mq *MasterQueue) addNewHostname(queue *HostnameQueue) {
+	// TODO
+
+}
+
+// Sets all HostnameQueue's numReqsSent to 0
+func (mq *MasterQueue) ClearNumReqsSent() {
+	// TODO
+}
+
+// Runs ClearNumReqsSent every minute,
+// thread sleeps upon completion of ClearNumReqsSent
+func (mq *MasterQueue) RateReset() {
+	nextTime := time.Now().Truncate(time.Minute)
+	for {
+		nextTime = nextTime.Add(time.Minute)
+		mq.ClearNumReqsSent()
+		time.Sleep(time.Until(nextTime))
+	}
+}

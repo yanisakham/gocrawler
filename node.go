@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/wangwalton/gocrawler/contracts"
-	"github.com/wangwalton/gocrawler/scraper/scraper"
+	"github.com/wangwalton/gocrawler/scraper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
