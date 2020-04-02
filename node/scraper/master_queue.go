@@ -1,6 +1,9 @@
 package scraper
 
-import "time"
+import (
+	"net/url"
+	"time"
+)
 
 type MasterQueue struct {
 	HostnameQueueMap   map[string]*HostnameQueue
@@ -35,6 +38,17 @@ func (mq *MasterQueue) nextURL() (string, bool) {
 func (mq *MasterQueue) addNewHostname(queue *HostnameQueue) {
 	// TODO
 
+}
+
+// Adds url to the right Hostname Queue
+// Returns error if Hostname queue no found
+func (mq *MasterQueue) addURL(u url.URL) error {
+	// TODO
+	/*
+		call u.Hostname() for hostname
+		call u.EscapedPath() for path
+	 */
+	return nil
 }
 
 // Sets all HostnameQueue's numReqsSent to 0

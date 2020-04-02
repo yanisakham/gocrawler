@@ -72,7 +72,9 @@ func (s *hostnameCoordinatorServer) AddHostnames(ctx context.Context, req *contr
 
 		if val, ok := s.hostnameMap[hp.Hostname]; ok {
 			for key := range hp.Paths {
-				val.Paths[key] = &contracts.Empty{}
+				if _, ok = val.Paths[key]; !ok {
+					val.Paths[key] = &contracts.Empty{}
+				}
 			}
 		} else {
 			s.hostnameMap[hp.Hostname] = hp
@@ -86,6 +88,7 @@ func (s *hostnameCoordinatorServer) AddHostnames(ctx context.Context, req *contr
 func newServer() *hostnameCoordinatorServer {
 	return &hostnameCoordinatorServer{
 		hostnameQueue: make([]*contracts.HostnamePaths, 0),
+		hostnameMap:   make(map[string]*contracts.HostnamePaths),
 		cv:            sync.NewCond(&sync.Mutex{}),
 	}
 }
