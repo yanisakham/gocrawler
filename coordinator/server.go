@@ -18,9 +18,9 @@ import (
 type hostnameCoordinatorServer struct {
 	contracts.UnimplementedHostnameCoordinatorServer
 	hostnameQueue []*contracts.HostnamePaths
-	mu sync.Mutex
+	hostnameMap   map[string]*contracts.HostnamePaths
+	cv            *sync.Cond
 }
-
 
 var (
 	crt = "ssl/server.crt"
@@ -40,22 +40,53 @@ func initZapLog() *zap.Logger {
 	config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	config.EncoderConfig.TimeKey = "timestamp"
 	config.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
-	logger, _ := config.Build()
-	return logger
+	logger_, _ := config.Build()
+	return logger_
 }
 
 func (s *hostnameCoordinatorServer) GetHostname(ctx context.Context, req *contracts.Empty) (*contracts.HostnamePaths, error) {
-	return nil, nil
+	s.cv.L.Lock()
+	for len(s.hostnameQueue) == 0 {
+		s.cv.Wait()
+	}
+
+	h := s.hostnameQueue[0]
+	s.hostnameQueue = s.hostnameQueue[1:]
+
+	if _, ok := s.hostnameMap[h.Hostname]; ok {
+		delete(s.hostnameMap, h.Hostname)
+	} else {
+		zap.S().Errorf("Can't find %s in map", h.Hostname)
+	}
+
+	s.cv.L.Unlock()
+	return h, nil
 }
 
-func (s *hostnameCoordinatorServer) AddHostnames(ctx context.Context,
-	req *contracts.MultipleHostnamePaths) (*contracts.Empty, error) {
+func (s *hostnameCoordinatorServer) AddHostnames(ctx context.Context, req *contracts.MultipleHostnamePaths) (*contracts.Empty, error) {
+	s.cv.L.Lock()
+	for _, hp := range req.Urls {
+		if len(s.hostnameQueue) == 0 {
+			s.cv.Signal()
+		}
+
+		if val, ok := s.hostnameMap[hp.Hostname]; ok {
+			for key := range hp.Paths {
+				val.Paths[key] = &contracts.Empty{}
+			}
+		} else {
+			s.hostnameMap[hp.Hostname] = hp
+			s.hostnameQueue = append(s.hostnameQueue, hp)
+		}
+	}
+	s.cv.L.Unlock()
 	return nil, nil
 }
 
 func newServer() *hostnameCoordinatorServer {
 	return &hostnameCoordinatorServer{
 		hostnameQueue: make([]*contracts.HostnamePaths, 0),
+		cv:            sync.NewCond(&sync.Mutex{}),
 	}
 }
 

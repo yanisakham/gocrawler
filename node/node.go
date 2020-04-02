@@ -19,8 +19,6 @@ var (
 	// serverHostOverride = flag.String("server_host_override", "x.test.youtube.com", "The server name use to verify the hostname returned by TLS handshake")
 )
 
-var logger, err = zap.NewDevelopment()
-
 func initZapLog() *zap.Logger {
 	config := zap.NewDevelopmentConfig()
 	config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
